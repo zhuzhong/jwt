@@ -26,7 +26,7 @@ public class JsonWebTokenServiceImplTest {
     
     @Test
     public void genToken() {
-        String token = jwtService.genToken("56578");
+        String token = jwtService.genToken(56578L);
         System.out.println(token);
         System.out.println(token.length());
 
