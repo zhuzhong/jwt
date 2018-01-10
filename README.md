@@ -1,11 +1,11 @@
-#jwt 
+# jwt 
 
 jwt全称 json web token，应用jwt可以解决前后端分离的框架方案的登陆与认证问题。
 
 这个demo,演示了如何使用jwt api.
 
 
-##场景
+## 场景
 
 
 
@@ -18,7 +18,7 @@ jwt全称 json web token，应用jwt可以解决前后端分离的框架方案�
 
 
 
-##demo实现功能
+## demo实现功能
 
 本demo只实现了上面场景中的关于token的部分，即3,6.
 
