@@ -3,8 +3,6 @@
  */
 package com.z.jwt;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -23,14 +21,25 @@ public class JsonWebTokenServiceImplTest {
         jwtService = new JsonWebTokenServiceImpl();
     }
 
+    @Test
+    public void loopTest() {
+    		long currentTime=System.currentTimeMillis();
+    		System.out.println(String.format("currentTime=%d",currentTime));
+    		for(long i=0L;i<10000L;i++) {
+    			 String token = jwtService.genToken("1234567890"+i);
+    		        System.out.println(token);
+    		        System.out.println(token.length());
+    		}
+    		System.out.println(String.format("elapsed time=%d millis", System.currentTimeMillis()-currentTime));
+    }
     
     @Test
     public void genToken() {
-        String token = jwtService.genToken(56578L);
+        String token = jwtService.genToken(123456789000L+"");
         System.out.println(token);
         System.out.println(token.length());
 
-        Long customerId = jwtService.parseToken(token);
+        String customerId = jwtService.parseToken(token);
         System.out.println("customerId=" + customerId);
         System.out.println("isNotExpired=" + jwtService.isNotExpired(token));
       
@@ -46,7 +55,7 @@ public class JsonWebTokenServiceImplTest {
 
         
         
-        Long customerId = jwtService.parseToken(newToken);
+        String customerId = jwtService.parseToken(newToken);
         System.out.println("customerId=" + customerId);
         System.out.println("isNotExpired=" + jwtService.isNotExpired(newToken));
         

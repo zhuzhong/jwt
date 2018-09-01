@@ -3,12 +3,6 @@
  */
 package com.z.jwt.support;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Header;
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-
 import java.security.Key;
 import java.util.Date;
 
@@ -17,13 +11,19 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.z.jwt.JsonWebTokenService;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Header;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+
 /**
  * jwt 为json web token的缩写 它的格式 HEADER.CLAIMS(OR PAYLOAD).SIGNATURE 三部分构成
  * 
  * @author Administrator
  *
  */
-@SuppressWarnings("restriction")
+
 public class JsonWebTokenServiceImpl implements JsonWebTokenService {
 
     private static final String JWT = "JWT";// token类型
@@ -32,10 +32,10 @@ public class JsonWebTokenServiceImpl implements JsonWebTokenService {
 
     private static final String base64Security = "123456"; // 签名密钥
 
-    private static final String issuer = "zhuzhong";// 签发者
-    private static final String audience = "zhuzhong";// 审阅者
+   // private static final String issuer = "zhuzhong";// 签发者
+    //private static final String audience = "zhuzhong";// 审阅者
 
-    private static final long TTLMillis = 30 * 60 * 1000;// 30分钟
+    private static final int TTLMins = 30 ;// 30分钟
 
     private static final long LASTTTLMills = 8 * 60 * 60 * 1000;// 过期8小时之内都可以使用
 
@@ -48,9 +48,12 @@ public class JsonWebTokenServiceImpl implements JsonWebTokenService {
 
         return false;
     }
-
     @Override
-    public String genToken(Long customerId) {
+    public String genToken(String customerId) {
+    	return genToken(customerId,TTLMins);
+    }
+    @Override
+    public String genToken(String customerId,int ttlMin) {
         if (customerId == null) {
             return null;
         }
@@ -62,21 +65,35 @@ public class JsonWebTokenServiceImpl implements JsonWebTokenService {
 
         // 添加构成JWT的参数
         JwtBuilder builder = Jwts.builder().setHeaderParam(Header.TYPE, JWT) // token类型
-
-                .setSubject(customerId.toString()) // 主题，也差不多是个人的一些信息
-                .setIssuedAt(now) // 创建时间
-                .setIssuer(issuer) // 签发者
-                .setAudience(audience) // 个人签名
+                
+                //--claim
+        		  .setIssuedAt(now) // 创建时间
+                .setSubject(customerId) // 主题，也差不多是个人的一些信息
+                //.setIssuer(issuer) // 签发者
+                .setIssuer(customerId.toString())
+                //.setAudience(audience) // 个人签名
+                .setAudience(customerId.toString())
+                
+                //-----
                 .signWith(signatureAlgorithm, signingKey) // 签名算法及密钥
+                //.compressWith(CompressionCodecs.GZIP)
+                .compressWith(io.jsonwebtoken.CompressionCodecs.DEFLATE)
         ;
         // 添加Token过期时间
-        if (TTLMillis >= 0) {
-            // 过期时间
-            long expMillis = nowMillis + TTLMillis;
+        if (ttlMin > 0) {
+        	// 过期时间
+            long expMillis = nowMillis + ttlMin*60*1000;
             // 过期时间
             Date exp = new Date(expMillis);
             // 系统时间之前的token都是不可以被承认的
-            builder.setExpiration(exp).setNotBefore(now);
+            builder.setExpiration(exp).setNotBefore(now);//claim
+        }else {
+        	// 过期时间
+            long expMillis = nowMillis + TTLMins*60*1000;
+            // 过期时间
+            Date exp = new Date(expMillis);
+            // 系统时间之前的token都是不可以被承认的
+            builder.setExpiration(exp).setNotBefore(now);//claim
         }
         // 生成JWT
         String token = builder.compact();
@@ -84,10 +101,10 @@ public class JsonWebTokenServiceImpl implements JsonWebTokenService {
     }
 
     @Override
-    public Long parseToken(String token) {
+    public String parseToken(String token) {
         Claims claims = parseJWT(token);
         if (claims != null) {
-            return Long.valueOf(claims.getSubject());
+            return claims.getSubject();
         }
 
         return null;
@@ -97,7 +114,8 @@ public class JsonWebTokenServiceImpl implements JsonWebTokenService {
         try {
             Claims claims = Jwts.parser()
             // 使用签名的时候，使用这个解析
-                    .setSigningKey(DatatypeConverter.parseBase64Binary(base64Security)).parseClaimsJws(jsonWebToken)
+                    .setSigningKey(DatatypeConverter.parseBase64Binary(base64Security))
+                    .parseClaimsJws(jsonWebToken)
                     // 不使用签名的时候，应用这个解析
                     // .parseClaimsJwt(jsonWebToken)
                     .getBody();
@@ -106,16 +124,19 @@ public class JsonWebTokenServiceImpl implements JsonWebTokenService {
             return null;
         }
     }
+    @Override
+    public String refreshToken(String token,int ttlMins) {
+    	 if (useable(token)) {
+             Claims claims = parseJWT(token);
+             return genToken(claims.getSubject(),ttlMins);
 
+         }
+
+         return null;
+    }
     @Override
     public String refreshToken(String token) {
-        if (useable(token)) {
-            Claims claims = parseJWT(token);
-            return genToken(Long.valueOf(claims.getSubject()));
-
-        }
-
-        return null;
+        return refreshToken(token, TTLMins);
     }
 
     @Override
